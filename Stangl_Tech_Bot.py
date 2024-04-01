@@ -1,15 +1,11 @@
 import discord
-from discord.ext.commands import Bot, Command, Context
-from discord_slash import SlashCommand, SlashContext
-from discord_slash.utils.manage_commands import create_option
-
 from bot_token import discord_bot
+from discord.commands import Option
 
 intents = discord.Intents.default()
 intents.messages = True
 
-bot = Bot(command_prefix="!", intents=intents)
-slash = SlashCommand(bot, sync_commands=True)
+bot = discord.Bot(intents=intents)
 
 @bot.event
 async def on_ready():
@@ -33,7 +29,7 @@ async def on_message(message):
             # Neue Levelrolle zuweisen
             await assign_level_role(message.author, user_data[message.author.id]["level"])
 
-    await bot.process_commands(message)
+    #await bot.process_commands(message)
 
 async def remove_previous_level_role(member, level):
     guild = member.guild
@@ -52,20 +48,15 @@ async def assign_level_role(member, level):
     # Rolle dem Benutzer zuweisen
     await member.add_roles(role)
 
-@slash.slash(name="message_count", description="Zeigt die Anzahl der gesendeten Nachrichten eines Benutzers an")
-async def message_count(ctx: SlashContext, member: discord.Member):
+@bot.slash_command()
+async def message_count(ctx, member: discord.Member):
     message_count = user_data.get(member.id, {}).get("message_count", 0)
-    await ctx.send(f"{member.name} hat {message_count} Nachrichten gesendet.")
+    await ctx.respond(f"{member.name} hat {message_count} Nachrichten gesendet.")
 
-@slash.slash(name="level", description="Zeigt das Level eines Benutzers an", options=[create_option(
-    name="user",
-    description="Der Benutzer dessen Level du sehen möchtest",
-    option_type=6,
-    required=True
-)])
-async def level(ctx: SlashContext, user: discord.Member):
+@bot.slash_command(description="Zeigt dir dein Level an")
+async def level(ctx, user: Option(discord.Member, "Der Benutzer dessen Level du sehen möchtest")):
     level = user_data.get(user.id, {}).get("level", 1)
-    await ctx.send(f"{user} ist auf dem **Level {level}**")
+    await ctx.respond(f"{user} ist auf dem **Level {level}**")
 
 # Verbinde den Bot mit dem Discord-Server
 bot.run(discord_bot.token)
